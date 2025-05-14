@@ -22,5 +22,13 @@ foreach ($orders as $item){
 }
 
 
-
+foreach($groupdedOrders as $item){
+    echo "Klients " . $item["customer"]. " pasūtīja tādas preces kā: ";
+    echo "</br>";
+    foreach($item["product"] as $id => $order){
+        echo $id+1 . " ". $order;
+        echo "</br>";
+    }
+    echo "</br>";
+}
 ?>
