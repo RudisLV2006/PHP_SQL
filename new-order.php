@@ -1,48 +1,45 @@
 <?php
 @require("connection.php");
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_REQUEST['customer'])) {
-    $customer = $_REQUEST['customer'];
+// SQL query to fetch customer details
+$sql = "SELECT customer_id, first_name FROM customers";
 
-    // Fetch customer ID based on selected first name
-    $sql = "SELECT customer_id FROM customers WHERE first_name = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $customer);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($result->num_rows > 0) {
-        // output data of each row
-        while($row = $result->fetch_assoc()) {
-            $id = $row["customer_id"];
+// Check if the form is submitted
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['customer'])) {
+    $customer_id = $_POST['customer'];
+
+    // Validate customer ID (should be numeric)
+    if (is_numeric($customer_id)) {
+        // Insert a new order for the selected customer
+        $sql_insert = "INSERT INTO orders (customer_id, order_date, status) VALUES (?, '1000-1-1', 1)";
+        $stmt = $conn->prepare($sql_insert);
+        $stmt->bind_param("i", $customer_id);  // Binding the customer_id as an integer
+
+        if ($stmt->execute()) {
+            // After successful order creation, redirect to avoid resubmitting the form
+            header("Location: " . $_SERVER['PHP_SELF']);
+            exit();
+        } else {
+            echo "Error: " . $stmt->error;
         }
+        $stmt->close();
     } else {
-        echo "No customer found.";
+        echo "Invalid customer ID.";
     }
-    $stmt->close();
-
-    // Insert a new order
-    $sql = "INSERT INTO orders (customer_id, order_date, status) VALUES (?, '1000-1-1', 1)";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id);
-    if ($stmt->execute()) {
-        echo "New record created successfully";
-    } else {
-        echo "Error: " . $stmt->error;
-    }
-    $stmt->close();
 }
 
 ?>
 
+<!-- Form to select customer -->
 <form method="POST">
     <select name="customer">
         <?php
-        $sql = "SELECT first_name FROM customers";
+        // Fetch the customer options from the database
         $result = $conn->query($sql);
         if ($result->num_rows > 0) {
-            // output data of each row
-            while($row = $result->fetch_assoc()) {
-                echo "<option value=". $row["first_name"]. ">". $row['first_name']. "</option>";
+            // Output data for each customer
+            while ($row = $result->fetch_assoc()) {
+                echo "<option value=" . $row["customer_id"] . ">" . $row['first_name'] . "</option>";
             }
         } else {
             echo "<option>No customers available</option>";
@@ -53,5 +50,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_REQUEST['customer'])) {
 </form>
 
 <?php
+// Close the database connection
 $conn->close();
 ?>
